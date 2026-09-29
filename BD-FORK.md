@@ -60,3 +60,10 @@ beim Anzeigen, sie stören nicht.
 Die Instanzbeschreibung auf video.blitzdonner.swiss verlinkt den laufenden Quellcode
 (Branch dieses Forks). Bei jedem neuen Branch `bd/<tag>-hochformat` den Link dort nachführen
 (Administration, Konfiguration, Instanzbeschreibung).
+
+## Offen beim nächsten Update: schlankes Image (LAAN M1)
+
+`v8.2.4-bd1` ist 4,13 GB (offiziell 2,89 GB). Ein Versuch mit `ALREADY_BUILT=1` ergab 4,56 GB,
+vermutlich weil Build-Reste im Kontext mitkopiert wurden. Beim nächsten Update: aus einem
+sauberen Klon bauen, nur `dist/` und `client/dist/` ergänzen, `.dockerignore` prüfen, Grösse
+gegen das offizielle Image vergleichen.

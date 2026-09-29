@@ -54,3 +54,9 @@ Rückweg: Image-Zeile zurück auf `chocobozzz/peertube:${PEERTUBE_VERSION}`,
 `docker compose up -d peertube`. Keine DB-Migration, die neuen Thumbnails sind gewöhnliche
 Zeilen in `thumbnail` (`aspectRatio = 'original'`); das offizielle Image ignoriert sie
 beim Anzeigen, sie stören nicht.
+
+## AGPL-Quellenhinweis
+
+Die Instanzbeschreibung auf video.blitzdonner.swiss verlinkt den laufenden Quellcode
+(Branch dieses Forks). Bei jedem neuen Branch `bd/<tag>-hochformat` den Link dort nachführen
+(Administration, Konfiguration, Instanzbeschreibung).

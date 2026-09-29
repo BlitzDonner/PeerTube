@@ -1,4 +1,4 @@
-import { sortBy } from '@peertube/peertube-core-utils'
+import { buildThumbnailSize, sortBy } from '@peertube/peertube-core-utils'
 import { ThumbnailAspectRatio, VideoFileStream } from '@peertube/peertube-models'
 import { generateThumbnailFromVideo } from '@server/helpers/ffmpeg/ffmpeg-image.js'
 import { logger, loggerTagsFactory } from '@server/helpers/logger.js'
@@ -28,15 +28,18 @@ export function createLocalPlaylistThumbnailsFromImage (options: {
 }) {
   const { inputPath, playlist, automaticallyGenerated, keepOriginal = false } = options
 
+  // Playlists have no aspect ratio of their own, so skip sizes that follow the video aspect ratio
+  const sizes = CONFIG.THUMBNAILS.SIZES.filter(size => size.aspectRatio !== 'original')
+
   return Promise.all(
-    CONFIG.THUMBNAILS.SIZES.map((size, i) => {
+    sizes.map((size, i) => {
       return _createLocalPlaylistThumbnailFromImage({
         inputPath,
         playlist,
         automaticallyGenerated,
         size,
         // Keep original image until the last thumbnail is generated
-        keepOriginal: keepOriginal || i !== CONFIG.THUMBNAILS.SIZES.length - 1
+        keepOriginal: keepOriginal || i !== sizes.length - 1
       })
     })
   )
@@ -181,17 +184,24 @@ export function createLocalVideoThumbnailsFromVideo (options: {
   video: MVideoThumbnails
   videoFile: MVideoFile
   ffprobe: FfprobeData
+  sizes?: ImageSize[] // default to all configured sizes
 }): Promise<MThumbnail[]> {
-  const { video, videoFile, ffprobe } = options
+  const { video, videoFile, ffprobe, sizes = CONFIG.THUMBNAILS.SIZES } = options
 
   return VideoPathManager.Instance.makeAvailableVideoFile(videoFile.withVideoOrPlaylist(video), input => {
-    const metadata = CONFIG.THUMBNAILS.SIZES.map(size => buildMetadataFromVideo({ video, size, extension: '.jpg' }))
+    const metadata = sizes.map(size => buildMetadataFromVideo({ video, size, extension: '.jpg' }))
 
-    let biggestImagePath: string
+    // Biggest generated image per aspect ratio, used as source for smaller sizes of the same ratio
+    // Non 16:9 ratios (like 1:1) reuse the biggest 16:9 image, 'original' sizes are extracted from the video
+    const biggestImagePaths: { [ratio: string]: string } = {}
 
     // Get bigger images to generate first
     return Bluebird.mapSeries(sortBy(metadata, 'width').reverse(), metadata => {
       const { filename, basePath, height, width, aspectRatio, outputPath } = metadata
+
+      const biggestImagePath = aspectRatio === 'original'
+        ? biggestImagePaths['original']
+        : biggestImagePaths['16:9']
 
       let thumbnailCreator: () => Promise<any>
 
@@ -222,8 +232,8 @@ export function createLocalVideoThumbnailsFromVideo (options: {
           })
       }
 
-      if (!biggestImagePath && aspectRatio === '16:9') {
-        biggestImagePath = outputPath
+      if (!biggestImagePaths[aspectRatio] && (aspectRatio === '16:9' || aspectRatio === 'original')) {
+        biggestImagePaths[aspectRatio] = outputPath
       }
 
       return createThumbnailFromFunction({
@@ -379,7 +389,8 @@ function buildMetadataFromVideo (options: {
   size: ImageSize
   extension: string
 }) {
-  const { video, extension, size } = options
+  const { video, extension } = options
+  const size = buildThumbnailSize(options.size, video.aspectRatio)
 
   const existingThumbnail = Array.isArray(video.Thumbnails)
     ? video.Thumbnails.find(t => t.height === size.height && t.width === size.width)

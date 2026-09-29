@@ -65,6 +65,7 @@
     "plugin:uninstall": "node ./dist/scripts/plugin/uninstall.js",
     "prune-storage": "LOGGER_LEVEL=warn node ./dist/scripts/prune-storage.js",
     "regenerate-thumbnails": "node ./dist/scripts/regenerate-thumbnails.js",
+    "create-original-thumbnails": "node ./dist/scripts/create-original-thumbnails.js",
     "release-embed-api": "bash ./scripts/release-embed-api.sh",
     "release": "bash ./scripts/release.sh",
     "reset-password": "node ./dist/scripts/reset-password.js",

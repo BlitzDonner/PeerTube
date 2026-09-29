@@ -527,6 +527,18 @@ thumbnails:
       height: 1400
       aspect_ratio: '1:1'
 
+    # Same aspect ratio as the video (portrait, square...): width/height are a bounding box
+    # Used by the player poster and by API consumers that want a thumbnail without black or blurred bars
+    -
+      width: 480
+      height: 480
+      aspect_ratio: 'original'
+
+    -
+      width: 1920
+      height: 1920
+      aspect_ratio: 'original'
+
 stats:
   # Display registration requests stats (average response time, total requests...)
   registration_requests:

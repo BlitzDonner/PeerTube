@@ -1,3 +1,4 @@
+import { buildThumbnailSize } from '@peertube/peertube-core-utils'
 import { generateImageFilename, processImage } from '@server/helpers/image-utils.js'
 import { CONFIG } from '@server/initializers/config.js'
 import { initDatabaseModels } from '@server/initializers/database.js'
@@ -7,7 +8,7 @@ import { JobQueue } from '@server/lib/job-queue/job-queue.js'
 import { ThumbnailModel } from '@server/models/video/thumbnail.js'
 import { VideoPlaylistModel } from '@server/models/video/video-playlist.js'
 import { VideoModel } from '@server/models/video/video.js'
-import { MVideoAP, MVideoPlaylistFull } from '@server/types/models/index.js'
+import { MVideoAP, MVideoFull, MVideoPlaylistFull } from '@server/types/models/index.js'
 import Bluebird from 'bluebird'
 import { program } from 'commander'
 import { pathExists } from 'fs-extra/esm'
@@ -78,19 +79,26 @@ async function processThumbnails (options: {
 
   const oldThumbnails = [ ...entity.Thumbnails ]
 
-  const thumbnails = await Bluebird.mapSeries(CONFIG.THUMBNAILS.SIZES, async size => {
+  const isVideo = entity instanceof VideoModel
+  // 'original' sizes follow the video aspect ratio: playlists skip them, videos use their existing 'original' image as source
+  const sizes = CONFIG.THUMBNAILS.SIZES.filter(size => isVideo || size.aspectRatio !== 'original')
+
+  const thumbnails = await Bluebird.mapSeries(sizes, async configSize => {
+    const size = isVideo ? buildThumbnailSize(configSize, (entity as MVideoFull).aspectRatio) : configSize
+    const sourceImage = (size.aspectRatio === 'original' && entity.getBestThumbnail('original')) || bestImage
+
     const thumbnail = new ThumbnailModel({
       filename: generateFilename(),
       height: size.height,
       width: size.width,
       aspectRatio: size.aspectRatio,
       fileUrl: null,
-      automaticallyGenerated: bestImage.automaticallyGenerated,
+      automaticallyGenerated: sourceImage.automaticallyGenerated,
       cached: false
     })
 
     await processImage({
-      path: bestImage.getFSPath(),
+      path: sourceImage.getFSPath(),
       destination: thumbnail.getFSPath(),
       newSize: size,
       keepOriginal: true

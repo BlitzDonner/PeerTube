@@ -6,4 +6,5 @@ export interface Thumbnail {
   fileUrl: string
 }
 
-export type ThumbnailAspectRatio = '16:9' | '16:10' | '4:3' | '5:4' | '1:1'
+// 'original': same aspect ratio as the video (width/height in config are a bounding box)
+export type ThumbnailAspectRatio = '16:9' | '16:10' | '4:3' | '5:4' | '1:1' | 'original'
